@@ -122,9 +122,21 @@ function process_msg {
 trap 'quit_prg' SIGINT SIGHUP SIGTERM
 
 # need sic
-if [ -z "$(which sic)" ]; then
+if [[ -z "$(which sic 2> /dev/null)" && !( -x "sic") ]]; then
 	echo "sic (simple irc client) required"
-	quit_prg
+	echo -n "download now? (y/n) "
+	read prompt
+	[[ ${prompt,,} != "y" ]] && quit_prg
+
+	[[ `which make 2> /dev/null` == "" ]] && \
+		echo "make is not installed; unable to make sic" && \
+		quit_prg
+
+	curl http://dl.suckless.org/tools/sic-1.2.tar.gz | tar xz
+	cd sic-1.2/
+	(make && mv sic ..) || (echo "unable to install sic" && cd ..; rm -r sic-1.2/ && quit_prg)
+	cd ..
+	rm -r sic-1.2/
 fi
 
 # need shuf 
@@ -134,8 +146,9 @@ if [ -z "$(which shuf)" ]; then
 	quit_prg
 fi
 
-# connect to server
-sic -h "$server" -n "$nickname" -p "$port" < $infile > $outfile &
+# decide which sic to use; connect to server
+sicbin=`which sic 2> /dev/null` || "./sic"
+$sicbin -h "$server" -n "$nickname" -p "$port" < $infile > $outfile &
 # holds the pipe open
 exec 4> $infile
 
