@@ -1,7 +1,7 @@
 8ball IRC Bot
 -------------
 
-8ball bot using sic (suckless simple irc client) and bash.
+8ball IRC bot using [BashBot](https://github.com/kjensenxz/bashbot) with TLS support (for all your top-secret questions)
 
 # RUNNING:
 	
