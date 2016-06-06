@@ -16,7 +16,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-trap 'exit_prg' SIGINT SIGHUP SIGTERM
 error() {
 	printf "ERROR: %s\n" "$1" >&2
 }
@@ -74,6 +73,7 @@ exit_prg() {
 	exec 4>&-
 	exit
 }
+trap 'exit_prg' SIGINT SIGHUP SIGTERM
 
 queue() {
 	#printf "%s\r\n" "$*"
