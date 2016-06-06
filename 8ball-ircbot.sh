@@ -85,7 +85,7 @@ say() {
 }
 
 getresp() {
-	shuf $ballresp | head -n1
+	shuf $ballresp -n 1
 }
 
 #args: channel, sender, data
