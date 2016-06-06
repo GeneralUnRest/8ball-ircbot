@@ -49,7 +49,7 @@ function send_msg {
 # to capture return, wrap call with 
 # `get_ans_8ball` or $(get_ans_8ball)
 function get_ans_8ball {
-	shuf $t8ball | head -n1
+	shuf -n1 $t8ball
 }
 
 # for invites
@@ -122,10 +122,10 @@ function process_msg {
 trap 'quit_prg' SIGINT SIGHUP SIGTERM
 
 # need sic
-if [ -z "$(which sic)" ]; then
-	echo "sic (simple irc client) required"
-	quit_prg
-fi
+#if [ -z "$(which sic)" ]; then
+#	echo "sic (simple irc client) required"
+#	quit_prg
+#fi
 
 # need shuf 
 # NOT ON OS X last I used it
@@ -135,7 +135,7 @@ if [ -z "$(which shuf)" ]; then
 fi
 
 # connect to server
-sic -h "$server" -n "$nickname" -p "$port" < $infile > $outfile &
+./ircclient.sh -q -j -s "$server" -n "$nickname" -p "$port" "$TLS" < $infile > $outfile &
 # holds the pipe open
 exec 4> $infile
 
