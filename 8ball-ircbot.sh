@@ -108,7 +108,7 @@ parse_pub() {
 				say "$1" "8ball-bot [bash], .help for usage, .source for source info"
 			;;
 			[.!]source)
-				say "$1" "https://github.com/kjensenxz/8ball-ircbot"
+				say "$1" "https://github.com/GeneralUnRest/8ball-ircbot.git"
 			;;
 			[.!]help)
 				say "$1" "Highlight me and ask a yes or no question, or give me two prepositions seperated by an or; all queries must end wit ha question mark."
