@@ -1,4 +1,4 @@
-#/usr/bin/env bash
+#!/usr/bin/env bash
 
 # 8ball-ircbot - magic 8 ball irc bot
 # Copyright (C) 2016 Kenneth B. Jensen <kenneth@jensen.cf>, prussian <generalunrest@airmail.cc>
@@ -44,7 +44,7 @@ connect() {
 	queue "USER ${nickname} 8 * :${nickname}"
 	
 	while read -r prefix msg; do
-		echo "$prefix | $msg"
+		#echo "$prefix | $msg"
 		if [[ $prefix == "PING" ]]; then
 			queue "PONG ${msg}"
 			join='no'
@@ -76,7 +76,7 @@ exit_prg() {
 }
 
 queue() {
-	printf "%s\r\n" "$*"
+	#printf "%s\r\n" "$*"
 	printf "%s\r\n" "$*" >&3
 }
 
@@ -94,15 +94,15 @@ parse_pub() {
 	orregexp="${nickname}.? (.*) or (.*)\?"
 	questexp="${nickname}.? (.*)\?"
 	if [[ $3 =~ $orregexp ]]; then
-		echo "or"
+		#echo "or"
 		say "$1" "$2: ${BASH_REMATCH[($RANDOM % 2)+1]}"
 	elif [[ $3 =~ $questexp ]]; then
-		echo "reg"
+		#echo "reg"
 		resp=$(getresp)
 		say "$1" "$2: $resp"
 	else
 		cmd=$(sed -r 's/^:|\r$//g' <<< $3)
-		echo "'$cmd'"
+		#echo "'$cmd'"
 		case $cmd in
 			[.!]bots)
 				say "$1" "8ball-bot [bash], .help for usage, .source for source info"
@@ -122,15 +122,15 @@ parse_priv() {
 	orregexp="(.*) or (.*)\?";
 	questexp="(.*)\?";
 	if [[ $2 =~ $orregexp ]]; then
-		echo "or"
+		#echo "or"
 		say "$1" "${BASH_REMATCH[($RANDOM % 2)+1]}"
 	elif [[ $2 =~ $questexp ]]; then
-		echo "reg"
+		#echo "reg"
 		resp=$(getresp)
 		say "$1" "$resp"
 	else
 		cmd=$(sed 's/\r$//' <<< $2)
-		echo "'$cmd'"
+		#echo "'$cmd'"
 		case "$cmd" in
 			:invite*)
 				inviteregexp="invite (.*)"
@@ -169,7 +169,7 @@ init_prg
 connect
 
 while read -r prefix msg; do
-	echo "${prefix} | ${msg}"
+	#echo "${prefix} | ${msg}"
 	if [[ $prefix == "PING" ]]; then
 		queue "PONG ${msg}"
 	elif [[ $prefix == "ERROR" ]]; then
@@ -186,7 +186,7 @@ while read -r prefix msg; do
 			parse_priv "$sender" "$data"
 		else 
 			parse_pub "$dest" "$sender" "$data"
-			echo "pub"
+			#echo "pub"
 		fi
 
 	fi
