@@ -16,8 +16,19 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-error() {
-	printf "ERROR: %s\n" "$1" >&2
+# $1 - channel|nick
+# $2 - message
+say() {
+    echo ":m ${1} ${2}" >&3
+}
+
+# $1 - channel
+join() {
+    echo ":j ${1}" >&3
+}
+
+getresp() {
+	shuf $ballresp -n 1
 }
 
 init_prg() {
@@ -28,42 +39,14 @@ init_prg() {
 	exec 4<> "$outfile"
 
 	# Open connection
-	commands="${network} ${port}"
-	[ $ssl == 'yes' ] && commands="--ssl ${commands}"
-	ncat $commands <&3 >&4 &
-	unset commands
+	commands="-n ${nickname} -s ${network} -p ${port} -q -j"
+	[ "$ssl" = 'true' ] && commands="${commands} -t"
+    ./irc-bashclient/ircbot.sh $commands <&3 >&4 &
 }
 
-connect() {
-	# start a timer and connect to server
-	join='yes'
-	(sleep 2s && join='no' ) &
-	
-	queue "NICK ${nickname}"
-	queue "USER ${nickname} 8 * :${nickname}"
-	
-	while read -r prefix msg; do
-		#echo "$prefix | $msg"
-		if [[ $prefix == "PING" ]]; then
-			queue "PONG ${msg}"
-			join='no'
-		elif [[ $msg =~ ^004 ]]; then
-			join='no'
-		elif [[ $msg =~ ^433 ]]; then
-			join='no'
-			error "nickname in use; exiting"
-			exit_prg
-		fi
-		if [[ $join == 'no' ]]; then 
-			break
-		fi
-	done <&4
-
-	# join channels, add parsing here
-	for i in ${channels}; do
-		queue "JOIN ${i}"
-	done
-}
+for channel in ${channels}; do
+    echo ":j ${channel}" >&3
+done
 
 # exit program and cleanup
 exit_prg() {
@@ -71,26 +54,15 @@ exit_prg() {
 	rm -f "$infile" "$outfile"
 	exec 3>&-
 	exec 4>&-
-	exit
+	exit 0
 }
 trap 'exit_prg' SIGINT SIGHUP SIGTERM
 
-queue() {
-	#printf "%s\r\n" "$*"
-	printf "%s\r\n" "$*" >&3
-}
-
-say() {
-	queue "PRIVMSG $1 :$2"
-}
-
-getresp() {
-	shuf $ballresp -n 1
-}
-
-#args: channel, sender, data
+#$1 - channel 
+#$2 - sender
+#$3 - message
 parse_pub() {
-	[ $2 == $nickname ] && return
+	[ "$2" = "$nickname" ] && return
 	orregexp="${nickname}.? (.*) or (.*)\?"
 	questexp="${nickname}.? (.*)\?"
 	if [[ $3 =~ $orregexp ]]; then
@@ -101,23 +73,22 @@ parse_pub() {
 		resp=$(getresp)
 		say "$1" "$2: $resp"
 	else
-		cmd=$(sed -r 's/^:|\r$//g' <<< $3)
-		#echo "'$cmd'"
-		case $cmd in
-			[.!]bots)
+		case $3 in
+			[.!]bots*)
 				say "$1" "8ball-bot [bash], .help for usage, .source for source info"
 			;;
-			[.!]source)
+			[.!]source*)
 				say "$1" "https://github.com/GeneralUnRest/8ball-ircbot.git"
 			;;
-			[.!]help)
+			[.!]help*)
 				say "$1" "Highlight me and ask a yes or no question, or give me two prepositions seperated by an or; all queries must end wit ha question mark."
 			;;
 		esac
 	fi
 }
 
-# args: sender, data
+# $1 - sender
+# $2 - message
 parse_priv() {
 	orregexp="(.*) or (.*)\?";
 	questexp="(.*)\?";
@@ -129,25 +100,22 @@ parse_priv() {
 		resp=$(getresp)
 		say "$1" "$resp"
 	else
-		cmd=$(sed 's/\r$//' <<< $2)
-		#echo "'$cmd'"
-		case "$cmd" in
-			:invite*)
+		case $2 in
+			invite*)
 				inviteregexp="invite (.*)"
 				if [[ "$2" =~ $inviteregexp ]]; then
 					temp=${BASH_REMATCH[1]}
-					queue "JOIN ${temp}"
+					join "${temp}"
 					say "$1" "Attempting to join channel ${temp}"
-					unset temp
 				else
 					say "$1" "Give me a channel to join"
 				fi
 			;;
-			:8ball*)
+			8ball*)
 				say "$1" "$(getresp)"
 			;;
-			:source*)
-				say "$1" "https://github.com/kjensenxz/8ball-ircbot"
+			source*)
+				say "$1" "https://github.com/GeneralUnRest/8ball-ircbot"
 			;;
 			*)
 				say "$1" "These are the command/s supported:"
@@ -160,37 +128,20 @@ parse_priv() {
 	fi
 }
 
-if [ ! -f "./config.sh" ]; then
-	error "fatal: config file not found; exiting"
-	exit
+if [ ! -f ./config.sh ]; then
+	echo "fatal: config file not found; exiting" >&2
+	exit 1
 fi
 
 init_prg
-connect
 
-while read -r prefix msg; do
-	#echo "${prefix} | ${msg}"
-	if [[ $prefix == "PING" ]]; then
-		queue "PONG ${msg}"
-	elif [[ $prefix == "ERROR" ]]; then
-		error "Disconnected; exiting"
-		exit
-	elif [[ $msg =~ ^PRIVMSG ]]; then
-		dest=$(awk '{print $2}' <<< $msg)
-		sender=$(sed -r 's/:|!.*//g' <<< $prefix)
-		data=$(awk '{$1=$2=""; print $0}' <<< $msg)
-
-		# check for private message
-		if [ $dest == $nickname ]; then
-			dest=$sender
-			parse_priv "$sender" "$data"
-		else 
-			parse_pub "$dest" "$sender" "$data"
-			#echo "pub"
-		fi
-
-	fi
-
+while read -r channel char date time user message; do
+    user=${user:1:-1}
+    if [ "$channel" = "$nickname" ]; then
+        parse_priv "$user" "$message"
+    else
+        parse_pub "$channel" "$user" "$message"
+    fi
 done <&4
 
-exit_prg
+kill -TERM $$
