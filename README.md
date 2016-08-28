@@ -1,7 +1,7 @@
 8ball IRC Bot
 -------------
 
-8ball IRC bot using [BashBot](https://github.com/kjensenxz/bashbot) with TLS support (for all your top-secret questions)
+8ball IRC bot using [irc-bashclient](https://github.com/GeneralUnRest/irc-bashclient) with TLS support (for all your top-secret questions)
 
 # RUNNING:
 	
