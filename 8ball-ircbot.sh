@@ -41,7 +41,7 @@ init_prg() {
 	# Open connection
 	commands="-n ${nickname} -s ${network} -p ${port} -q -j"
 	[ "$ssl" = 'true' ] && commands="${commands} -t"
-    ./irc-bashclient/ircbot.sh $commands <&3 >&4 &
+    ./ircbot-client.sh $commands <&3 >&4 &
 }
 
 for channel in ${channels}; do
