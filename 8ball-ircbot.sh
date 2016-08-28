@@ -28,33 +28,29 @@ join() {
 }
 
 getresp() {
-	shuf $ballresp -n 1
+    shuf $ballresp -n 1
 }
 
 init_prg() {
-	# Load config; create pipes/fd
-	. ./config.sh
-	mkfifo "$infile" "$outfile"
-	exec 3<> "$infile"
-	exec 4<> "$outfile"
+    # Load config; create pipes/fd
+    . ./config.sh
+    mkfifo "$infile" "$outfile"
+    exec 3<> "$infile"
+    exec 4<> "$outfile"
 
-	# Open connection
-	commands="-n ${nickname} -s ${network} -p ${port} -q -j"
-	[ "$ssl" = 'true' ] && commands="${commands} -t"
+    # Open connection
+    commands="-n ${nickname} -s ${network} -p ${port} -q -j"
+    [ "$ssl" = 'true' ] && commands="${commands} -t"
     ./ircbot-client.sh $commands <&3 >&4 &
 }
 
-for channel in ${channels}; do
-    echo ":j ${channel}" >&3
-done
-
 # exit program and cleanup
 exit_prg() {
-	pkill -P "$$"
-	rm -f "$infile" "$outfile"
-	exec 3>&-
-	exec 4>&-
-	exit 0
+    pkill -P "$$"
+    rm -f "$infile" "$outfile"
+    exec 3>&-
+    exec 4>&-
+    exit 0
 }
 trap 'exit_prg' SIGINT SIGHUP SIGTERM
 
@@ -62,78 +58,81 @@ trap 'exit_prg' SIGINT SIGHUP SIGTERM
 #$2 - sender
 #$3 - message
 parse_pub() {
-	[ "$2" = "$nickname" ] && return
-	orregexp="${nickname}.? (.*) or (.*)\?"
-	questexp="${nickname}.? (.*)\?"
-	if [[ $3 =~ $orregexp ]]; then
-		#echo "or"
-		say "$1" "$2: ${BASH_REMATCH[($RANDOM % 2)+1]}"
-	elif [[ $3 =~ $questexp ]]; then
-		#echo "reg"
-		resp=$(getresp)
-		say "$1" "$2: $resp"
-	else
-		case $3 in
-			[.!]bots*)
-				say "$1" "8ball-bot [bash], .help for usage, .source for source info"
-			;;
-			[.!]source*)
-				say "$1" "https://github.com/GeneralUnRest/8ball-ircbot.git"
-			;;
-			[.!]help*)
-				say "$1" "Highlight me and ask a yes or no question, or give me two prepositions seperated by an or; all queries must end wit ha question mark."
-			;;
-		esac
-	fi
+    [ "$2" = "$nickname" ] && return
+    orregexp="${nickname}.? (.*) or (.*)\?"
+    questexp="${nickname}.? (.*)\?"
+    if [[ $3 =~ $orregexp ]]; then
+        #echo "or"
+        say "$1" "$2: ${BASH_REMATCH[($RANDOM % 2)+1]}"
+    elif [[ $3 =~ $questexp ]]; then
+        #echo "reg"
+        resp=$(getresp)
+        say "$1" "$2: $resp"
+    else
+        case $3 in
+            [.!]bots*)
+                say "$1" "8ball-bot [bash], .help for usage, .source for source info"
+            ;;
+            [.!]source*)
+                say "$1" "https://github.com/GeneralUnRest/8ball-ircbot.git"
+            ;;
+            [.!]help*)
+                say "$1" "Highlight me and ask a yes or no question, or give me two prepositions seperated by an or; all queries must end wit ha question mark."
+            ;;
+        esac
+    fi
 }
 
 # $1 - sender
 # $2 - message
 parse_priv() {
-	orregexp="(.*) or (.*)\?";
-	questexp="(.*)\?";
-	if [[ $2 =~ $orregexp ]]; then
-		#echo "or"
-		say "$1" "${BASH_REMATCH[($RANDOM % 2)+1]}"
-	elif [[ $2 =~ $questexp ]]; then
-		#echo "reg"
-		resp=$(getresp)
-		say "$1" "$resp"
-	else
-		case $2 in
-			invite*)
-				inviteregexp="invite (.*)"
-				if [[ "$2" =~ $inviteregexp ]]; then
-					temp=${BASH_REMATCH[1]}
-					join "${temp}"
-					say "$1" "Attempting to join channel ${temp}"
-				else
-					say "$1" "Give me a channel to join"
-				fi
-			;;
-			8ball*)
-				say "$1" "$(getresp)"
-			;;
-			source*)
-				say "$1" "https://github.com/GeneralUnRest/8ball-ircbot"
-			;;
-			*)
-				say "$1" "These are the command/s supported:"
-				say "$1" "invite #channel - join channel"
-				say "$1" "8ball [y/n question] - standard 8ball"
-				say "$1" "source - get source info"
-				say "$1" "help - this message"
-			;;
-		esac	
-	fi
+    orregexp="(.*) or (.*)\?";
+    questexp="(.*)\?";
+    if [[ $2 =~ $orregexp ]]; then
+        #echo "or"
+        say "$1" "${BASH_REMATCH[($RANDOM % 2)+1]}"
+    elif [[ $2 =~ $questexp ]]; then
+        #echo "reg"
+        resp=$(getresp)
+        say "$1" "$resp"
+    else
+        case $2 in
+            invite*)
+                inviteregexp="invite (.*)"
+                if [[ "$2" =~ $inviteregexp ]]; then
+                    temp=${BASH_REMATCH[1]}
+                    join "${temp}"
+                    say "$1" "Attempting to join channel ${temp}"
+                else
+                    say "$1" "Give me a channel to join"
+                fi
+            ;;
+            8ball*)
+                say "$1" "$(getresp)"
+            ;;
+            source*)
+                say "$1" "https://github.com/GeneralUnRest/8ball-ircbot"
+            ;;
+            *)
+                say "$1" "These are the command/s supported:"
+                say "$1" "invite #channel - join channel"
+                say "$1" "8ball [y/n question] - standard 8ball"
+                say "$1" "source - get source info"
+                say "$1" "help - this message"
+            ;;
+        esac    
+    fi
 }
 
 if [ ! -f ./config.sh ]; then
-	echo "fatal: config file not found; exiting" >&2
-	exit 1
+    echo "fatal: config file not found; exiting" >&2
+    exit 1
 fi
 
 init_prg
+for channel in ${channels[*]}; do
+    join "$channel"
+done
 
 while read -r channel char date time user message; do
     user=${user:1:-1}
